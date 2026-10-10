@@ -1,0 +1,30 @@
+{
+  "name": "@relayrtc/node",
+  "version": "0.1.0",
+  "description": "Typed Node.js client for the RelayRTC public REST API and webhook verification.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "files": ["dist", "README.md", "LICENSE"],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "engines": { "node": ">=22.0.0" },
+  "repository": { "type": "git", "url": "https://github.com/relayrtc/node-sdk.git" },
+  "homepage": "https://github.com/relayrtc/node-sdk#readme",
+  "bugs": "https://github.com/relayrtc/node-sdk/issues",
+  "publishConfig": { "access": "public" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.3"
+  }
+}
