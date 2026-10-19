@@ -356,3 +356,17 @@ Redirects are rejected to avoid forwarding credentials or mutation bodies to a d
 | Create, update, rotate, delete or replay webhooks | `webhooks:write` |
 
 For client media controls, chat, screen sharing and connection quality, use the [React SDK](https://github.com/relayrtc/react-sdk) or the browser client. This Node SDK manages the public server API; it does not join a media session.
+
+## Streaming foundation (unreleased)
+
+Matching local Phase 0 builds expose `relay.streams.create/list/get/update/delete`, `start/stop`, `createIngestCredentials/rotateIngestCredentials`, `getPlayback/createPlaybackGrant/revokePlaybackGrants`, `getUsage` and `relay.streamingOperations.get`. All configuration, session, credential, grant and operation types are exported. Stream lists return `{ data, nextCursor }`; stop/delete return pending durable operations.
+
+```ts
+const stream = await relay.streams.create({ name: 'Live', source: { kind: 'room', roomId } })
+const operation = await relay.streams.start(stream.id)
+const progress = await relay.streamingOperations.get(operation.id)
+```
+
+Required scopes: streams:read (reads), streams:write (configuration/stop/delete), streams:publish (room start and encoder credentials) and streams:playback (viewer grants/revocation). Commands generate an idempotency UUID by default. Set `RequestOptions.idempotencyKey` to the same application command ID when retrying a command yourself. Mutation retries remain explicit. PATCH requires the current version and a stopped source.
+
+Only return viewer grants or RTC participant tokens after authorizing the application caller. Never send a management key to a browser or log returned secrets. See the local `examples/streaming-foundation/` example and streaming REST/Node draft references. Existing published 0.1.0 packages may not contain these unreleased additions.

@@ -17,6 +17,7 @@ export interface RelayServerOptions {
 }
 
 export interface RequestOptions {
+  readonly idempotencyKey?: string
   readonly signal?: AbortSignal
   readonly timeoutMs?: number
   readonly retry?: false
@@ -113,8 +114,8 @@ export interface ListParticipantsQuery {
 }
 
 export type CreateTurnCredentialsInput =
-  | { readonly roomId: string; readonly sessionId: string }
-  | { readonly roomId?: never; readonly sessionId?: never }
+  | { readonly roomId: string; readonly sessionId: string; readonly participantId?: string }
+  | { readonly roomId?: never; readonly sessionId?: never; readonly participantId?: never }
 
 export interface TurnCredentials {
   readonly expiresAt: string
@@ -129,9 +130,61 @@ export interface TurnCredentials {
 }
 
 export const webhookEventTypes = [
-  'room.created', 'room.started', 'room.ended', 'participant.joined', 'participant.left',
-  'participant.reconnected', 'track.published', 'track.unpublished',
-  'connection.degraded', 'connection.recovered',
+"stream.guest.invited","stream.guest.invite_accepted","stream.guest.invite_declined","stream.guest.requested","stream.guest.request_approved","stream.guest.request_rejected","stream.guest.joined","stream.guest.left","stream.guest.removed","stream.guest.muted","stream.guest.invite_expired","stream.guest.invite_cancelled","stream.guest.grant_revoked",
+  "dvr.enabled", "dvr.window_changed", "dvr.segment_evicted", "dvr.disabled",
+ "mixer.started", "mixer.scene_activated", "mixer.source_lost", "mixer.overloaded", "mixer.stopped", "mixer.failed",
+  "clip.requested", "clip.rendering", "clip.ready", "clip.failed", "clip.deleted",
+  "restream.probing",
+  "restream.source_connected",
+  "restream.source_lost",
+  "restream.recovering",
+  "restream.stopped",
+  "restream.failed",
+  "schedule.created",
+  "schedule.updated",
+  "schedule.starting",
+  "schedule.started",
+  "schedule.missed",
+  "schedule.cancelled",
+  "schedule.failed",
+  "schedule.completed",
+  "schedule.reminder",
+
+  "recording.started",
+  "recording.segment_committed",
+  "recording.finalizing",
+  "recording.ready",
+  "recording.failed",
+  "recording.deleted",
+
+  "destination.created",
+  "destination.connected",
+  "destination.disconnected",
+  "destination.retrying",
+  "destination.failed",
+  "broadcast.created",
+  "broadcast.starting",
+  "broadcast.live",
+  "broadcast.reconnecting",
+  "broadcast.output_degraded",
+  "broadcast.stopped",
+  "broadcast.failed",
+  "stream.created",
+  "stream.starting",
+  "stream.live",
+  "stream.reconnecting",
+  "stream.ended",
+  "stream.failed",
+  "room.created",
+  "room.started",
+  "room.ended",
+  "participant.joined",
+  "participant.left",
+  "participant.reconnected",
+  "track.published",
+  "track.unpublished",
+  "connection.degraded",
+  "connection.recovered",
 ] as const
 export type WebhookEventType = typeof webhookEventTypes[number]
 export type WebhookEndpointStatus = 'enabled' | 'disabled'

@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer'
 import { RelayApiError } from './errors.js'
 import type { RelayServerOptions, RequestOptions, RetryOptions } from './types.js'
 
-export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE'
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 export interface HttpResult<T> { readonly status: number; readonly data: T }
 
 const retryableStatus = (status: number): boolean =>
@@ -80,6 +80,9 @@ export class HttpTransport {
       throw new RelayApiError('INVALID_REQUEST', 'The request body must be JSON serializable')
     }
     const timeoutMs = integer(options.timeoutMs ?? this.#timeoutMs, 1, 300_000, 'timeoutMs')
+    if (options.idempotencyKey !== undefined && !/^[A-Za-z0-9_.:-]{1,128}$/u.test(options.idempotencyKey)) {
+      throw new RelayApiError('INVALID_REQUEST', 'Use an idempotency key of 1 to 128 letters, digits, dots, colons, underscores or hyphens')
+    }
     const controller = new AbortController()
     const cancel = (): void => {
       controller.abort(new RelayApiError('REQUEST_CANCELLED', 'The API request was cancelled'))
@@ -100,6 +103,7 @@ export class HttpTransport {
             headers: {
               authorization: `Bearer ${this.#apiKey}`,
               accept: 'application/json',
+              ...(options.idempotencyKey === undefined ? {} : { 'idempotency-key': options.idempotencyKey }),
               ...(serialized === undefined ? {} : { 'content-type': 'application/json' }),
             },
             ...(serialized === undefined ? {} : { body: serialized }),
