@@ -1,5 +1,7 @@
 # RelayRTC Node.js SDK
 
+Rate-limited responses retain `RelayApiError.status` and `retryAfterMs` (milliseconds, or `null` when absent). GET retries honor numeric and HTTP-date `Retry-After` headers. When the required delay cannot fit within `timeoutMs`, the SDK returns the original HTTP error immediately instead of timing out while waiting. Application backends should forward the status and `Retry-After` to their caller; the caller must wait before retrying. Mutations are not automatically retried.
+
 Typed server SDK for the RelayRTC public REST API. Manage rooms, issue participant tokens, remove participants, obtain TURN credentials, query usage and manage signed webhooks.
 
 This package uses native Node.js fetch and crypto. It has no runtime package dependencies and does not import RelayRTC databases or internal service APIs. Node.js 22 or newer is required. The package provides ES modules and TypeScript declarations.
