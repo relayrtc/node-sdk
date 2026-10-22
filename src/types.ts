@@ -96,6 +96,12 @@ export interface ParticipantToken {
   readonly expiresAt: string
 }
 
+export interface RenewParticipantTokenInput {
+  readonly participantToken: string
+  readonly sessionId: string
+  readonly ttlSeconds?: number
+}
+
 export interface Participant {
   readonly id: string
   readonly roomId: string

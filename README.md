@@ -129,7 +129,17 @@ const browserCredentials = {
 
 Return `browserCredentials` only to the authorized user who owns that participant. `room:join` is mandatory. Permissions must be unique. Token lifetime is 60–3600 seconds; the default is 600 seconds with only `room:join`.
 
-Every token-create call creates a new participant ID. It cannot renew an existing participant for a long call. A public identity-preserving renewal endpoint is still needed; the SDK does not expose a fabricated renewal method or sign tokens with internal keys.
+Every token-create call creates a new participant ID. For an ongoing call, use the identity-preserving renewal endpoint in matching local API/SDK builds:
+
+```ts
+const renewed = await relay.tokens.renew('room_123', {
+  participantToken: storedCurrentToken,
+  sessionId: 'session_123',
+  ttlSeconds: 600,
+})
+```
+
+Authenticate the application user and recheck their access before each renewal. Keep the current token in server-side session storage, save its replacement, and return it to the browser SDK's `refreshToken` callback. Renewal preserves participant identity and permissions and requires an active session plus an unexpired token. Removed participants, ended rooms and revoked/inactive access cannot renew. Use the same configured lifetime as issuance; early renewal must extend the previous expiration. Streaming guests use their own join-grant API. Older deployed API images may not include this endpoint.
 
 ## List and inspect participants
 

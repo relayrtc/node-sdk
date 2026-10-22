@@ -17,6 +17,7 @@ import type {
 } from './streaming.js'
 import type {
   ApiContext, CleanupResult, CreateParticipantTokenInput, CreateRoomInput, CreateTurnCredentialsInput,
+  RenewParticipantTokenInput,
   CreateWebhookInput, CursorPage, ListParticipantsQuery, ListRoomsQuery, ListWebhookDeliveriesQuery,
   OffsetQuery, Participant, ParticipantToken, RelayServerOptions, ReplayWebhookDeliveryInput,
   RequestOptions, RevealedWebhookEndpoint, Room, RuntimeOperation, TurnCredentials,
@@ -208,6 +209,8 @@ export class RelayServer {
   readonly tokens = {
     create: async (roomId: string, input: CreateParticipantTokenInput, options?: RequestOptions): Promise<ParticipantToken> =>
       this.#data('POST', `rooms/${resourceId(roomId)}/tokens`, input, undefined, options),
+    renew: async (roomId: string, input: RenewParticipantTokenInput, options?: RequestOptions): Promise<ParticipantToken> =>
+      this.#data('POST', `rooms/${resourceId(roomId)}/tokens/renew`, input, undefined, options),
   }
 
   readonly participants = {
