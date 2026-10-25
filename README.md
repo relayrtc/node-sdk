@@ -129,7 +129,17 @@ const browserCredentials = {
 
 Return `browserCredentials` only to the authorized user who owns that participant. `room:join` is mandatory. Permissions must be unique. Token lifetime is 60–3600 seconds; the default is 600 seconds with only `room:join`.
 
-Every token-create call creates a new participant ID. It cannot renew an existing participant for a long call. A public identity-preserving renewal endpoint is still needed; the SDK does not expose a fabricated renewal method or sign tokens with internal keys.
+Every token-create call creates a new participant ID. For an ongoing call, use the identity-preserving renewal endpoint in matching local API/SDK builds:
+
+```ts
+const renewed = await relay.tokens.renew('room_123', {
+  participantToken: storedCurrentToken,
+  sessionId: 'session_123',
+  ttlSeconds: 600,
+})
+```
+
+Authenticate the application user and recheck their access before each renewal. Keep the current token in server-side session storage, save its replacement, and return it to the browser SDK's `refreshToken` callback. Renewal preserves participant identity and permissions and requires an active session plus an unexpired token. Removed participants, ended rooms and revoked/inactive access cannot renew. Use the same configured lifetime as issuance; early renewal must extend the previous expiration. Streaming guests use their own join-grant API. Older deployed API images may not include this endpoint.
 
 ## List and inspect participants
 
@@ -356,3 +366,17 @@ Redirects are rejected to avoid forwarding credentials or mutation bodies to a d
 | Create, update, rotate, delete or replay webhooks | `webhooks:write` |
 
 For client media controls, chat, screen sharing and connection quality, use the [React SDK](https://github.com/relayrtc/react-sdk) or the browser client. This Node SDK manages the public server API; it does not join a media session.
+
+## Streaming foundation (unreleased)
+
+Matching local Phase 0 builds expose `relay.streams.create/list/get/update/delete`, `start/stop`, `createIngestCredentials/rotateIngestCredentials`, `getPlayback/createPlaybackGrant/revokePlaybackGrants`, `getUsage` and `relay.streamingOperations.get`. All configuration, session, credential, grant and operation types are exported. Stream lists return `{ data, nextCursor }`; stop/delete return pending durable operations.
+
+```ts
+const stream = await relay.streams.create({ name: 'Live', source: { kind: 'room', roomId } })
+const operation = await relay.streams.start(stream.id)
+const progress = await relay.streamingOperations.get(operation.id)
+```
+
+Required scopes: streams:read (reads), streams:write (configuration/stop/delete), streams:publish (room start and encoder credentials) and streams:playback (viewer grants/revocation). Commands generate an idempotency UUID by default. Set `RequestOptions.idempotencyKey` to the same application command ID when retrying a command yourself. Mutation retries remain explicit. PATCH requires the current version and a stopped source.
+
+Only return viewer grants or RTC participant tokens after authorizing the application caller. Never send a management key to a browser or log returned secrets. See the local `examples/streaming-foundation/` example and streaming REST/Node draft references. Existing published 0.1.0 packages may not contain these unreleased additions.
