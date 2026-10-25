@@ -8,6 +8,12 @@ export interface HttpResult<T> { readonly status: number; readonly data: T }
 const retryableStatus = (status: number): boolean =>
   status === 408 || status === 425 || status === 429 || (status >= 500 && status <= 599)
 
+const retryAfterMs = (value: string | null): number | null => {
+  if (value === null || !value.trim()) return null
+  const delay = /^\d+(?:\.\d+)?$/u.test(value.trim()) ? Number(value) * 1000 : Date.parse(value) - Date.now()
+  return Number.isFinite(delay) ? Math.min(2147483647, Math.max(0, Math.ceil(delay))) : null
+}
+
 const integer = (value: number, min: number, max: number, name: string): number => {
   if (!Number.isInteger(value) || value < min || value > max) {
     throw new RelayApiError('INVALID_CONFIGURATION', `${name} must be an integer from ${min} to ${max}`)
@@ -80,6 +86,7 @@ export class HttpTransport {
       throw new RelayApiError('INVALID_REQUEST', 'The request body must be JSON serializable')
     }
     const timeoutMs = integer(options.timeoutMs ?? this.#timeoutMs, 1, 300_000, 'timeoutMs')
+    const deadline = Date.now() + timeoutMs
     if (options.idempotencyKey !== undefined && !/^[A-Za-z0-9_.:-]{1,128}$/u.test(options.idempotencyKey)) {
       throw new RelayApiError('INVALID_REQUEST', 'Use an idempotency key of 1 to 128 letters, digits, dots, colons, underscores or hyphens')
     }
@@ -127,6 +134,7 @@ export class HttpTransport {
                 status: response.status,
                 requestId: record(data) && typeof data.requestId === 'string' ? data.requestId : response.headers.get('x-request-id'),
                 retryable: retryableStatus(response.status),
+                retryAfterMs: retryAfterMs(retryAfter),
               },
             )
           }
@@ -140,7 +148,10 @@ export class HttpTransport {
             ? error
             : new RelayApiError('NETWORK_ERROR', 'The API request failed before a response was received', { retryable: true })
           if (!failure.retryable || attempt === attempts) throw failure
-          const delay = this.#retryDelay(retryAfter, attempt, timeoutMs)
+          const delay = this.#retryDelay(retryAfter, attempt)
+          // Preserve the upstream response (especially 429 + Retry-After) when
+          // its cooldown does not fit. Do not replace it with a timeout/502.
+          if (delay >= deadline - Date.now()) throw failure
           await this.#sleep(delay, controller.signal)
         }
       }
@@ -173,12 +184,9 @@ export class HttpTransport {
     }
   }
 
-  #retryDelay(retryAfter: string | null, attempt: number, timeoutMs: number): number {
-    if (retryAfter !== null) {
-      const seconds = /^\d+(?:\.\d+)?$/u.test(retryAfter.trim()) ? Number(retryAfter) : NaN
-      const delay = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(retryAfter) - Date.now()
-      if (Number.isFinite(delay) && delay >= 0) return Math.min(Math.ceil(delay), timeoutMs + 1)
-    }
+  #retryDelay(retryAfter: string | null, attempt: number): number {
+    const delay = retryAfterMs(retryAfter)
+    if (delay !== null) return delay
     return Math.min(this.#initialDelayMs * 2 ** (attempt - 1), this.#maxDelayMs)
   }
 
