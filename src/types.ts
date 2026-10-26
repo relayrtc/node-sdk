@@ -1,3 +1,5 @@
+import type { ServiceUsageReport } from './service-usage.js'
+
 export type JsonValue = string | number | boolean | null | JsonObject | readonly JsonValue[]
 export interface JsonObject { readonly [key: string]: JsonValue }
 
@@ -61,6 +63,8 @@ export interface ListRoomsQuery {
   readonly cursor?: string
   readonly limit?: number
   readonly status?: RoomStatus
+  readonly search?: string
+  readonly joinable?: boolean
 }
 
 export interface RuntimeOperation {
@@ -324,7 +328,7 @@ export interface WebhookSignatureContract {
   readonly [key: string]: string | number | readonly number[]
 }
 
-export type UsageCategory = 'all' | 'rooms' | 'participants' | 'sfu' | 'turn' | 'signaling' | 'screen-share'
+export type UsageCategory = 'all' | 'rooms' | 'participants' | 'sfu' | 'turn' | 'signaling' | 'screen-share' | 'streaming'
 export type UsageRange = '24h' | '7d' | '14d' | '30d'
 
 type UsageWindowQuery =
@@ -375,6 +379,8 @@ export interface UsageResponse {
     readonly events: 'attributed to occurrence time'
   }
   readonly metricDefinitions: Readonly<Partial<Record<UsageMetric, UsageMetricDefinition>>>
+  /** Included for all/streaming reports; service measurements are unpriced origin observations. */
+  readonly serviceUsage?: ServiceUsageReport
   readonly summary: UsageMetrics
   readonly buckets: readonly { readonly startedAt: string; readonly endedAt: string; readonly metrics: UsageMetrics }[]
   readonly dataQuality: {

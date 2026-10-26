@@ -39,6 +39,14 @@ export interface ClipResource {
   createdAt: string;
   expiresAt: string | null;
 }
+export interface ClipListQuery {
+  cursor?: string;
+  limit?: number;
+}
+export interface ClipPage {
+  data: ClipResource[];
+  nextCursor: string | null;
+}
 export interface RollingBufferPolicy {
   enabled: boolean;
   durationSeconds: number;

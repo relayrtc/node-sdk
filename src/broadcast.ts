@@ -93,6 +93,8 @@ export interface BroadcastDetail extends BroadcastResource {
 export interface ListBroadcastsQuery {
   cursor?: string;
   limit?: number;
+  order?: "id" | "newest";
+  activeOnly?: boolean;
   streamId?: string;
   state?: BroadcastState;
 }

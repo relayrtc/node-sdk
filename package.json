@@ -1,11 +1,16 @@
 {
   "name": "@relayrtc/node",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Typed Node.js client for the RelayRTC public REST API and webhook verification.",
   "license": "Apache-2.0",
   "type": "module",
   "sideEffects": false,
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -14,15 +19,23 @@
       "import": "./dist/index.js"
     }
   },
-  "engines": { "node": ">=22.0.0" },
-  "repository": { "type": "git", "url": "https://github.com/relayrtc/node-sdk.git" },
-  "homepage": "https://github.com/relayrtc/node-sdk#readme",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/relayrtc/node-sdk.git"
+  },
+  "homepage": "https://docs.relayrtc.com/reference/sdk/server/node/overview",
   "bugs": "https://github.com/relayrtc/node-sdk/issues",
-  "publishConfig": { "access": "public" },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "node --test tests/*.test.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepack": "tsc -p tsconfig.json"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
