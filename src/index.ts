@@ -8,8 +8,8 @@ export * from './streaming.js'
 export * from './broadcast.js'
 
 export * from './destination.js'
-export type * from "./recording.js";
-export type * from "./schedule.js";
+export * from "./recording.js";
+export * from "./schedule.js";
 export { resolveScheduleLocalTime } from "./schedule-time.js";
 export * from "./restream.js";
 
@@ -20,3 +20,4 @@ export * from "./mixer.js";
 export * from "./dvr.js";
 
 export * from "./guest.js";
+export type * from './service-usage.js'

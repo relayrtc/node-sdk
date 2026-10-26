@@ -1,7 +1,7 @@
 import type {GuestResource,GuestStage,GuestRoster,GuestJoinGrant,GuestDecision,InviteGuestInput,RequestGuestInput,AudienceGrantInput,GuestStageInput} from "./guest.js";
 import type { DvrPolicy, DvrPolicyResource, DvrPlayback } from "./dvr.js";
 import type {MixerResource,MixerSceneResource,MixerOverlay,MixerOperation,MixerCommandResult,CreateMixerInput,PutMixerSceneInput,ActivateMixerSceneInput,CreateMixerOverlayInput} from "./mixer.js";
-import type {ClipResource, CreateClipInput, ClipWindow, RollingBufferPolicy} from "./clip.js";
+import type {ClipResource, ClipListQuery, ClipPage, CreateClipInput, ClipWindow, RollingBufferPolicy} from "./clip.js";
 import type {RestreamSource, RestreamDetail, CreateRestreamSourceInput, UpdateRestreamSourceInput} from "./restream.js";
 import type { ScheduledBroadcast, CreateScheduleInput, UpdateScheduleInput, SchedulePage, ScheduleOperation, ScheduledPlayback } from "./schedule.js";
 import type { RecordingPolicy, StartRecordingInput, RecordingResource, RecordingPage, RecordingPlayback, MediaAsset, AssetAccessGrant } from "./recording.js";
@@ -13,7 +13,8 @@ import { HttpTransport, resourceId } from './transport.js'
 import type { HttpMethod } from './transport.js'
 import type {
   CreateStreamInput, UpdateStreamInput, StreamResource, StreamDetail, StreamListQuery, StreamPage,
-  IngestCredential, PlaybackGrant, StreamPlayback, StreamingOperation, StreamingUsage,
+  CreateIngestCredentialInput, IngestCredential, IngestCredentialList, RotatedIngestCredential,
+  CreatePlaybackGrantInput, PlaybackGrant, StreamPlayback, StreamingOperation, StreamingUsage,
 } from './streaming.js'
 import type {
   ApiContext, CleanupResult, CreateParticipantTokenInput, CreateRoomInput, CreateTurnCredentialsInput,
@@ -37,6 +38,8 @@ export class RelayServer {
   }
 
   readonly clips = {
+    list: (query: ClipListQuery = {}, options?: RequestOptions): Promise<ClipPage> =>
+      this.#data('GET', 'clips', undefined, query, options),
     get: (clipId:string,options?:RequestOptions):Promise<ClipResource> => this.#data('GET',`clips/${resourceId(clipId)}`,undefined,undefined,options),
     publish: (clipId:string,options?:RequestOptions):Promise<ClipResource> => this.#streamCommand('POST',`clips/${resourceId(clipId)}/publish`,{},options),
     delete: (clipId:string,options?:RequestOptions):Promise<ClipResource> => this.#streamCommand('DELETE',`clips/${resourceId(clipId)}`,undefined,options),
@@ -70,7 +73,7 @@ export class RelayServer {
     },
     clips: {
       create: (streamId:string,input:CreateClipInput,options?:RequestOptions):Promise<ClipResource> => this.#streamCommand('POST',`streams/${resourceId(streamId)}/clips`,input,options),
-      list: (streamId:string,query:{cursor?:string;limit?:number}={},options?:RequestOptions):Promise<{data:ClipResource[];nextCursor:string|null}> => this.#data('GET',`streams/${resourceId(streamId)}/clips`,undefined,query,options),
+      list: (streamId:string,query:ClipListQuery={},options?:RequestOptions):Promise<ClipPage> => this.#data('GET',`streams/${resourceId(streamId)}/clips`,undefined,query,options),
       getWindow: (streamId:string,options?:RequestOptions):Promise<{data:ClipWindow[]}> => this.#data('GET',`streams/${resourceId(streamId)}/clip-window`,undefined,undefined,options),
       getBufferPolicy: (streamId:string,options?:RequestOptions):Promise<{policy:RollingBufferPolicy|null;version:number}> => this.#data('GET',`streams/${resourceId(streamId)}/buffer-policy`,undefined,undefined,options),
       setBufferPolicy: (streamId:string,input:{policy:RollingBufferPolicy;version:number},options?:RequestOptions):Promise<{policy:RollingBufferPolicy;version:number}> => this.#streamCommand('PUT',`streams/${resourceId(streamId)}/buffer-policy`,input,options),
@@ -104,13 +107,15 @@ export class RelayServer {
       this.#streamCommand('POST', `streams/${resourceId(streamId)}/source-sessions`, {}, options),
     stop: (streamId: string, options?: RequestOptions): Promise<StreamingOperation> =>
       this.#streamCommand('POST', `streams/${resourceId(streamId)}/stop`, {}, options),
-    createIngestCredentials: (streamId: string, input: { ttlSeconds?: number; mode?: "live" | "dvr"; broadcastId?: string } = {}, options?: RequestOptions): Promise<IngestCredential> =>
+    listIngestCredentials: (streamId: string, options?: RequestOptions): Promise<IngestCredentialList> =>
+      this.#data('GET', `streams/${resourceId(streamId)}/ingest-credentials`, undefined, undefined, options),
+    createIngestCredentials: (streamId: string, input: CreateIngestCredentialInput = {}, options?: RequestOptions): Promise<IngestCredential> =>
       this.#streamCommand('POST', `streams/${resourceId(streamId)}/ingest-credentials`, input, options),
-    rotateIngestCredentials: (streamId: string, credentialId: string, input: { ttlSeconds?: number; mode?: "live" | "dvr"; broadcastId?: string } = {}, options?: RequestOptions): Promise<IngestCredential> =>
+    rotateIngestCredentials: (streamId: string, credentialId: string, input: CreateIngestCredentialInput = {}, options?: RequestOptions): Promise<RotatedIngestCredential> =>
       this.#streamCommand('POST', `streams/${resourceId(streamId)}/ingest-credentials/${resourceId(credentialId)}/rotate`, input, options),
     getPlayback: (streamId: string, options?: RequestOptions): Promise<StreamPlayback> =>
       this.#data('GET', `streams/${resourceId(streamId)}/playback`, undefined, undefined, options),
-    createPlaybackGrant: (streamId: string, input: { ttlSeconds?: number; mode?: "live" | "dvr"; broadcastId?: string } = {}, options?: RequestOptions): Promise<PlaybackGrant> =>
+    createPlaybackGrant: (streamId: string, input: CreatePlaybackGrantInput = {}, options?: RequestOptions): Promise<PlaybackGrant> =>
       this.#data('POST', `streams/${resourceId(streamId)}/playback-grants`, input, undefined, options),
     revokePlaybackGrants: (streamId: string, options?: RequestOptions): Promise<{ revoked: true }> =>
       this.#data('POST', `streams/${resourceId(streamId)}/playback-grants/revoke`, {}, undefined, options),
@@ -236,7 +241,7 @@ export class RelayServer {
   readonly usage = {
     get: async (query: UsageQuery = {}, options?: RequestOptions): Promise<UsageResponse> => {
       const { category = 'all', ...parameters } = query
-      if (!['all', 'rooms', 'participants', 'sfu', 'turn', 'signaling', 'screen-share'].includes(category)) {
+      if (!['all', 'rooms', 'participants', 'sfu', 'turn', 'signaling', 'screen-share', 'streaming'].includes(category)) {
         throw new RelayApiError('INVALID_REQUEST', 'Provide a supported usage category')
       }
       return this.#data('GET', category === 'all' ? 'usage' : `usage/${category}`, undefined, parameters, options)

@@ -74,8 +74,8 @@ export class HttpTransport {
     const url = new URL(path, this.#baseUrl)
     for (const [key, value] of Object.entries(query ?? {})) {
       if (value === undefined) continue
-      if (typeof value !== 'string' && typeof value !== 'number') {
-        throw new RelayApiError('INVALID_REQUEST', 'Query values must be strings or numbers')
+      if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') {
+        throw new RelayApiError('INVALID_REQUEST', 'Query values must be strings, numbers or booleans')
       }
       url.searchParams.set(key, String(value))
     }
