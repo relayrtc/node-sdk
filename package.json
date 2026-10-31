@@ -1,6 +1,6 @@
 {
   "name": "@relayrtc/node",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "Typed Node.js client for the RelayRTC public REST API and webhook verification.",
   "license": "Apache-2.0",
   "type": "module",

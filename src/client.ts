@@ -1,3 +1,4 @@
+import type { ParticipantAccess, UpdateParticipantAccess, RoomAuditQuery, RoomAuditPage } from "./room-access.js";
 import type {GuestResource,GuestStage,GuestRoster,GuestJoinGrant,GuestDecision,InviteGuestInput,RequestGuestInput,AudienceGrantInput,GuestStageInput} from "./guest.js";
 import type { DvrPolicy, DvrPolicyResource, DvrPlayback } from "./dvr.js";
 import type {MixerResource,MixerSceneResource,MixerOverlay,MixerOperation,MixerCommandResult,CreateMixerInput,PutMixerSceneInput,ActivateMixerSceneInput,CreateMixerOverlayInput} from "./mixer.js";
@@ -199,6 +200,19 @@ export class RelayServer {
   }
 
   readonly rooms = {
+    getActivity:(roomId:string,options?:RequestOptions):Promise<RoomActivitySnapshot>=>this.#data('GET',`rooms/${resourceId(roomId)}/activity`,undefined,undefined,options),
+    getActivityPolicy:(roomId:string,options?:RequestOptions):Promise<RoomActivityPolicy>=>this.#data('GET',`rooms/${resourceId(roomId)}/activity-policy`,undefined,undefined,options),
+    updateActivityPolicy:(roomId:string,input:RoomActivityPolicy,options?:RequestOptions):Promise<RoomActivityPolicy>=>this.#data('PUT',`rooms/${resourceId(roomId)}/activity-policy`,input,undefined,options),
+    getLifecycle:(roomId:string,options?:RequestOptions):Promise<RoomLifecycle>=>this.#data('GET',`rooms/${resourceId(roomId)}/lifecycle`,undefined,undefined,options),
+    updateLifecycle:(roomId:string,input:UpdateRoomLifecycle,options?:RequestOptions):Promise<RoomLifecycle>=>this.#data('PUT',`rooms/${resourceId(roomId)}/lifecycle`,input,undefined,options),
+    invitations:{
+      create:(roomId:string,input:CreateRoomInvitation,options?:RequestOptions):Promise<{invitation:RoomInvitation;secret:string}>=>this.#data('POST',`rooms/${resourceId(roomId)}/invitations`,input,undefined,{...options,retry:false}),
+      list:(roomId:string,query:{cursor?:string}={},options?:RequestOptions):Promise<CursorPage<RoomInvitation>>=>this.#data('GET',`rooms/${resourceId(roomId)}/invitations`,undefined,query,options),
+      revoke:(roomId:string,invitationId:string,options?:RequestOptions):Promise<RoomInvitation>=>this.#data('DELETE',`rooms/${resourceId(roomId)}/invitations/${resourceId(invitationId)}`,undefined,undefined,options),
+      redeem:(roomId:string,input:RedeemRoomInvitation,options?:RequestOptions):Promise<ParticipantToken>=>this.#data('POST',`rooms/${resourceId(roomId)}/invitations/redeem`,input,undefined,options),
+    },
+    audit: (roomId: string, query: RoomAuditQuery = {}, options?: RequestOptions): Promise<RoomAuditPage> =>
+      this.#data('GET', `rooms/${resourceId(roomId)}/audit`, undefined, { ...query }, options),
     create: async (input: CreateRoomInput, options?: RequestOptions): Promise<Room> =>
       this.#data('POST', 'rooms', input, undefined, options),
     list: async (query: ListRoomsQuery = {}, options?: RequestOptions): Promise<CursorPage<Room>> =>
@@ -219,6 +233,10 @@ export class RelayServer {
   }
 
   readonly participants = {
+    getAccess: (roomId: string, participantId: string, options?: RequestOptions): Promise<ParticipantAccess> =>
+      this.#data('GET', `${this.#participantPath(roomId, participantId)}/access`, undefined, undefined, options),
+    updateAccess: (roomId: string, participantId: string, input: UpdateParticipantAccess, options?: RequestOptions): Promise<ParticipantAccess> =>
+      this.#data('PUT', `${this.#participantPath(roomId, participantId)}/access`, input, undefined, options),
     list: async (roomId: string, query: ListParticipantsQuery = {}, options?: RequestOptions): Promise<CursorPage<Participant>> =>
       this.#data('GET', `rooms/${resourceId(roomId)}/participants`, undefined, query, options),
     get: async (roomId: string, participantId: string, options?: RequestOptions): Promise<Participant> =>
@@ -305,3 +323,5 @@ export class RelayServer {
 }
 
 function guestPath(streamId:string,broadcastId:string,route:string){return `streams/${resourceId(streamId)}/${route}?broadcastId=${resourceId(broadcastId)}`}
+import type {RoomLifecycle,UpdateRoomLifecycle,RoomInvitation,CreateRoomInvitation,RedeemRoomInvitation} from './room-lifecycle.js'
+import type {RoomActivityPolicy,RoomActivitySnapshot} from './room-activity.js'
