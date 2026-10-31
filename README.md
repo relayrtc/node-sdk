@@ -62,3 +62,13 @@ Methods return promises and throw [`RelayApiError`](https://docs.relayrtc.com/re
 Report SDK bugs in [GitHub Issues](https://github.com/relayrtc/node-sdk/issues). Include package versions and a minimal reproduction; remove API keys, participant tokens and private media URLs.
 
 Licensed under [Apache-2.0](LICENSE).
+
+## Room access and audits
+
+Version 0.1.4 adds `participants.getAccess`, `participants.updateAccess` and `rooms.audit`. Updates require the latest policy version and the `participants:write` secret-key scope. Roles never expand signed media grants. See [room policy](https://docs.relayrtc.com/guides/room-roles-and-permissions) for host transfer, recovery and revocation timing.
+## Room admission and lifecycle
+
+Version 0.1.4 adds `rooms.getLifecycle`, `rooms.updateLifecycle` and `rooms.invitations.create/list/revoke/redeem`. Mutations use the explicit `rooms:write` secret-key scope. Redemption uses `tokens:create` and a stable redemption UUID. Derive the identity from your application's verified session. Keep invitation secrets and management keys off public clients. See [admission behavior](https://docs.relayrtc.com/guides/room-admission-and-lifecycle).
+## Room activity policy
+
+Version 0.1.4 adds `rooms.getActivity`, `rooms.getActivityPolicy` and versioned `rooms.updateActivityPolicy`. Reads require `rooms:read`, and policy updates require `rooms:write`. There is no Node microphone capture or push-to-talk API. See [speakers and activity](https://docs.relayrtc.com/guides/speakers-activity-and-push-to-talk).
